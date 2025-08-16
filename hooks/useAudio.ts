@@ -37,13 +37,61 @@ export const useAudio = () => {
     }
   }, []);
 
-  // Generate a simple beep sound programmatically
+  // Static imports for audio files
+  const audioFiles = {
+    'chime.wav': require('../assets/audio/chime.wav'),
+    'beep.wav': require('../assets/audio/beep.wav'),
+    'notification.wav': require('../assets/audio/notification.wav'),
+  };
+
+  // Play audio file using expo-audio
+  const playAudioFile = useCallback(async (fileName: keyof typeof audioFiles = 'chime.wav') => {
+    try {
+      console.log(`🔊 Playing audio file: ${fileName}`);
+      
+      // Get the audio file module
+      const audioModule = audioFiles[fileName];
+      if (!audioModule) {
+        throw new Error(`Audio file ${fileName} not found`);
+      }
+      
+      // Replace the current source and play
+      player.replace(audioModule);
+      player.play();
+      
+      console.log(`🔊 Audio file ${fileName} played successfully`);
+      
+      // Add complementary haptic feedback
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+    } catch (error) {
+      console.warn(`🔊 Audio file ${fileName} failed:`, error);
+      throw error; // Re-throw to allow fallback strategy
+    }
+  }, [player]);
+
+  // Generate a simple beep sound - now tries audio files first
   const playProgrammaticBeep = useCallback(async () => {
     try {
-      console.log('🔊 Creating programmatic beep...');
+      console.log('🔊 Trying to play audio files...');
       
-      // Use Web Audio API (works in Expo web/mobile)
+      // Try different audio files in order of preference
+      const fileNames: (keyof typeof audioFiles)[] = ['chime.wav', 'beep.wav', 'notification.wav'];
+      
+      for (const fileName of fileNames) {
+        try {
+          await playAudioFile(fileName);
+          return; // Success, exit
+        } catch (fileError) {
+          console.warn(`🔊 ${fileName} failed:`, fileError);
+          continue; // Try next file
+        }
+      }
+      
+      // If all files failed, try web audio as fallback
       if (Platform.OS === 'web') {
+        console.log('🔊 Falling back to Web Audio API...');
+        
         // Web platform - use Web Audio API
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
         const oscillator = audioContext.createOscillator();
@@ -66,23 +114,19 @@ export const useAudio = () => {
         
         console.log('🔊 Web Audio API beep played');
         
-      } else {
-        // Mobile platform - create a simple sine wave data
-        console.log('🔊 Attempting mobile audio generation...');
+        // Add complementary haptic feedback
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         
-        // For mobile, we'll rely on haptic feedback as the primary method
-        // since generating audio programmatically is complex without audio files
-        throw new Error('Mobile programmatic audio not implemented - falling back to haptic');
+      } else {
+        // If we get here, all audio methods failed
+        throw new Error('All audio file methods failed - falling back to haptic');
       }
       
-      // Add complementary haptic feedback
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      
     } catch (error) {
-      console.warn('🔊 Programmatic beep failed:', error);
+      console.warn('🔊 All audio methods failed:', error);
       throw error; // Re-throw to allow fallback strategy
     }
-  }, []);
+  }, [playAudioFile]);
 
   // Enhanced haptic feedback that creates a chime-like pattern
   const playHapticChime = useCallback(async () => {
@@ -188,6 +232,7 @@ export const useAudio = () => {
 
   return {
     playChime,
+    playAudioFile,
     playHapticChime,
     playNotificationBeep,
     testAudio,
