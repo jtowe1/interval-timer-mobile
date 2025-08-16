@@ -246,7 +246,7 @@ export const CircularTimer: React.FC<CircularTimerProps> = ({
         {currentTimer?.status === 'running' && (
           <View style={styles.statusContainer}>
             <View style={[styles.statusDot, { backgroundColor: getTimerColor(currentTimerIndex) }]} />
-            <Text style={[styles.statusText, { color: colors.text }]}>ACTIVE</Text>
+            <Text style={[styles.statusText, styles.timerSubtext]}>ACTIVE</Text>
           </View>
         )}
         
@@ -255,32 +255,32 @@ export const CircularTimer: React.FC<CircularTimerProps> = ({
             <View style={[styles.completedIndicator, { backgroundColor: getTimerColor(currentTimerIndex) }]}>
               <Text style={styles.checkmark}>✓</Text>
             </View>
-            <Text style={[styles.statusText, { color: colors.text }]}>COMPLETE</Text>
+            <Text style={[styles.statusText, styles.timerSubtext]}>COMPLETE</Text>
           </View>
         )}
 
         {/* Main time display */}
-        <Text style={[styles.timeText, { color: colors.text }]}>
+        <Text style={[styles.timeText, styles.timerText]}>
           {currentTimer ? formatTime(currentTimer.minutes, currentTimer.seconds) : '00:00'}
         </Text>
 
         {/* Timer label */}
         {currentTimer?.label && (
-          <Text style={[styles.labelText, { color: colors.text }]} numberOfLines={1}>
+          <Text style={[styles.labelText, styles.timerLabel]} numberOfLines={1}>
             {currentTimer.label}
           </Text>
         )}
 
         {/* Progress indicator */}
         {currentProgress > 0 && (
-          <Text style={[styles.progressText, { color: colors.text }]}>
+          <Text style={[styles.progressText, styles.timerSubtext]}>
             {Math.round(currentProgress)}% complete
           </Text>
         )}
 
         {/* Session progress */}
         {timers.length > 1 && currentTimerIndex >= 0 && (
-          <Text style={[styles.sessionText, { color: colors.text }]}>
+          <Text style={[styles.sessionText, styles.timerSubtext]}>
             Timer {currentTimerIndex + 1} of {timers.length}
           </Text>
         )}
@@ -339,6 +339,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: -1,
   },
+  timerText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+    // Additional shadow layers for better depth
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+  },
   labelText: {
     fontSize: 14,
     fontWeight: '300',
@@ -346,6 +358,21 @@ const styles = StyleSheet.create({
     marginTop: 8,
     opacity: 0.7,
     maxWidth: 120,
+  },
+  timerLabel: {
+    color: '#FFFFFF',
+    opacity: 0.9,
+    fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  timerSubtext: {
+    color: '#FFFFFF',
+    opacity: 0.8,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   progressText: {
     fontSize: 10,
