@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tehjrow.intervaltimermobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,8 +20,10 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.WAKE_LOCK"
-      ]
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.tehjrow.intervaltimermobile"
     },
     "web": {
       "bundler": "metro",
@@ -42,6 +45,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2baef87c-9969-4e12-9c73-86f0dedcfb38"
+      }
     }
   }
 }
