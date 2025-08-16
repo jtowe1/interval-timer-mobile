@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { GradientBackground } from '@/components/GradientBackground';
 import { useTimer } from '@/contexts/TimerContext';
+import { useAudio } from '@/hooks/useAudio';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -13,6 +14,7 @@ export default function SetupScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { appState, addTimer, updateTimer, removeTimer, startMeditation } = useTimer();
+  const { testAudio } = useAudio();
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleStartSession = () => {
@@ -104,6 +106,13 @@ export default function SetupScreen() {
           onPress={addTimer}
         >
           <ThemedText style={styles.addButtonText}>+ Add Timer</ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.testAudioButton, styles.glassButton]}
+          onPress={testAudio}
+        >
+          <ThemedText style={styles.testAudioButtonText}>🔊 Test Audio</ThemedText>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -227,6 +236,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   addButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  testAudioButton: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  testAudioButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
