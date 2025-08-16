@@ -24,7 +24,7 @@ interface TimerContextType {
   addTimer: () => void;
   updateTimer: (id: string, updates: Partial<Timer>) => void;
   removeTimer: (id: string) => void;
-  startMeditation: () => boolean;
+  startMeditation: () => Promise<boolean>;
   stopMeditation: () => void;
 }
 
@@ -88,7 +88,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
     }));
   }, []);
 
-  const startMeditation = useCallback(() => {
+  const startMeditation = useCallback(async () => {
     // Validate that all timers have a duration > 0
     const hasInvalidTimer = appState.timers.some(timer =>
       timer.originalMinutes === 0 && timer.originalSeconds === 0
@@ -97,6 +97,16 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
     if (hasInvalidTimer) {
       Alert.alert('Invalid Timer', 'Please set a duration for all timers (at least 1 second)');
       return false;
+    }
+
+    // Play start sound
+    try {
+      if (playChime) {
+        await playChime();
+      }
+    } catch (error) {
+      console.warn('Start meditation sound failed:', error);
+      // Don't prevent starting if sound fails
     }
 
     setAppState(prev => ({
@@ -112,7 +122,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
     }));
 
     return true;
-  }, [appState.timers]);
+  }, [appState.timers, playChime]);
 
   const stopMeditation = useCallback(() => {
     setAppState(prev => ({

@@ -17,8 +17,8 @@ export default function SetupScreen() {
   const { testAudio } = useAudio();
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const handleStartSession = () => {
-    const success = startMeditation();
+  const handleStartSession = async () => {
+    const success = await startMeditation();
     if (success) {
       router.push('/session');
     }
