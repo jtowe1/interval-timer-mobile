@@ -1,13 +1,12 @@
-import { StyleSheet, ScrollView, View, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { useState } from 'react';
 import { router } from 'expo-router';
+import { useState } from 'react';
+import { Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
 import { GradientBackground } from '@/components/GradientBackground';
+import { ThemedText } from '@/components/ThemedText';
+import { Colors } from '@/constants/Colors';
 import { useTimer } from '@/contexts/TimerContext';
 import { useAudio } from '@/hooks/useAudio';
-import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function SetupScreen() {
@@ -32,7 +31,7 @@ export default function SetupScreen() {
     const numValue = Math.max(0, parseInt(value) || 0);
     const maxValue = field === 'minutes' ? 99 : 59;
     const finalValue = Math.min(numValue, maxValue);
-    
+
     updateTimer(id, {
       [field]: finalValue,
       [`original${field.charAt(0).toUpperCase() + field.slice(1)}`]: finalValue
@@ -40,10 +39,11 @@ export default function SetupScreen() {
   };
 
   return (
-    <GradientBackground style={styles.container}>
-      <View style={styles.titleContainer}>
-        <ThemedText type="title" style={styles.titleText}>Interval Timer Setup</ThemedText>
-      </View>
+    <GradientBackground useSafeArea={true} safeAreaEdges={['top', 'left', 'right']}>
+      <View style={styles.container}>
+        <View style={styles.titleContainer}>
+          <ThemedText type="title" style={styles.titleText}>Interval Timer Setup</ThemedText>
+        </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {appState.timers.map((timer, index) => (
@@ -122,6 +122,7 @@ export default function SetupScreen() {
           <ThemedText style={styles.startButtonText}>Start Session</ThemedText>
         </TouchableOpacity>
       </ScrollView>
+      </View>
     </GradientBackground>
   );
 }
@@ -129,9 +130,11 @@ export default function SetupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   titleContainer: {
+    marginTop: 20,
     marginBottom: 20,
   },
   titleText: {

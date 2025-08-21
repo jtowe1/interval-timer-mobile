@@ -1,18 +1,24 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 interface GradientBackgroundProps {
   children: React.ReactNode;
   style?: any;
+  useSafeArea?: boolean;
+  safeAreaEdges?: ('top' | 'bottom' | 'left' | 'right')[];
 }
 
 export const GradientBackground: React.FC<GradientBackgroundProps> = ({
   children,
   style,
+  useSafeArea = false,
+  safeAreaEdges = ['top', 'bottom', 'left', 'right'],
 }) => {
   const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
 
   // Color schemes to match the web app's meditation gradient
   const gradientColors = {
@@ -30,6 +36,13 @@ export const GradientBackground: React.FC<GradientBackgroundProps> = ({
 
   const colors = gradientColors[colorScheme ?? 'dark'];
 
+  const safeAreaStyle = useSafeArea ? {
+    paddingTop: safeAreaEdges.includes('top') ? insets.top : 0,
+    paddingBottom: safeAreaEdges.includes('bottom') ? insets.bottom : 0,
+    paddingLeft: safeAreaEdges.includes('left') ? insets.left : 0,
+    paddingRight: safeAreaEdges.includes('right') ? insets.right : 0,
+  } : {};
+
   return (
     <LinearGradient
       colors={colors as any}
@@ -37,13 +50,18 @@ export const GradientBackground: React.FC<GradientBackgroundProps> = ({
       end={{ x: 1, y: 1 }}
       style={[styles.gradient, style]}
     >
-      {children}
+      <View style={[styles.safeAreaContainer, safeAreaStyle]}>
+        {children}
+      </View>
     </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   gradient: {
+    flex: 1,
+  },
+  safeAreaContainer: {
     flex: 1,
   },
 });

@@ -70,8 +70,9 @@ export default function SessionScreen() {
 
   if (!hasSession) {
     return (
-      <GradientBackground style={styles.container}>
-        <View style={styles.noSessionContainer}>
+      <GradientBackground useSafeArea={true} safeAreaEdges={['top', 'left', 'right']}>
+        <View style={styles.container}>
+          <View style={styles.noSessionContainer}>
           <ThemedText style={[styles.noSessionText, { color: 'white' }]}>
             No active session
           </ThemedText>
@@ -86,14 +87,16 @@ export default function SessionScreen() {
               Go to Setup
             </ThemedText>
           </TouchableOpacity>
+          </View>
         </View>
       </GradientBackground>
     );
   }
 
   return (
-    <GradientBackground style={styles.container}>
-      {/* Session header */}
+    <GradientBackground useSafeArea={true} safeAreaEdges={['top', 'left', 'right']}>
+      <View style={styles.container}>
+        {/* Session header */}
       <View style={styles.header}>
         <ThemedText style={[styles.sessionStatus, { color: 'white' }]}>
           {getSessionStatus()}
@@ -135,6 +138,7 @@ export default function SessionScreen() {
           </ThemedText>
         </View>
       )}
+      </View>
     </GradientBackground>
   );
 }
@@ -142,7 +146,9 @@ export default function SessionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 20,
   },
   noSessionContainer: {
     flex: 1,
