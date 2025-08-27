@@ -38,8 +38,8 @@ export default function SessionScreen() {
         {
           text: 'Stop',
           style: 'destructive',
-          onPress: () => {
-            stopMeditation();
+          onPress: async () => {
+            await stopMeditation();
             router.push('/');
           },
         },
