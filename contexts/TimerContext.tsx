@@ -2,11 +2,22 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { Alert, AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import * as Notifications from 'expo-notifications';
 import 'react-native-get-random-values';
 import { useAudio } from '@/hooks/useAudio';
 
 const TIMER_STATE_KEY = '@timer_state';
 const BACKGROUND_TIMESTAMP_KEY = '@background_timestamp';
+
+// Configure notification handler
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 export interface Timer {
   id: string;
@@ -24,6 +35,7 @@ export interface TimerAppState {
   isRunning: boolean;
   backgroundTimestamp?: number;
   timerStartTime?: number;
+  scheduledNotifications?: string[];
 }
 
 interface TimerContextType {
@@ -40,6 +52,67 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 // Simple UUID generator for React Native
 const generateId = () => {
   return 'timer-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+};
+
+// Request notification permissions
+const requestNotificationPermissions = async (): Promise<boolean> => {
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+  
+  if (existingStatus !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+  
+  return finalStatus === 'granted';
+};
+
+// Schedule notifications for each timer
+const scheduleTimerNotifications = async (timers: Timer[], startTime: number): Promise<string[]> => {
+  const notificationIds: string[] = [];
+  let cumulativeDuration = 0; // Track cumulative duration from start
+  
+  for (let i = 0; i < timers.length; i++) {
+    const timer = timers[i];
+    const timerDurationSeconds = timer.originalMinutes * 60 + timer.originalSeconds;
+    cumulativeDuration += timerDurationSeconds;
+    
+    // Calculate delay from the actual start time
+    const delayFromStart = cumulativeDuration;
+    
+    try {
+      console.log(`Scheduling notification for timer ${i + 1}: ${timer.label || 'Unnamed'} to fire in ${delayFromStart} seconds`);
+      
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Timer Complete',
+          body: timer.label ? `"${timer.label}" completed` : `Timer ${i + 1} completed`,
+          sound: 'default',
+          data: { timerId: timer.id, timerIndex: i },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: delayFromStart,
+        },
+      });
+      
+      notificationIds.push(notificationId);
+    } catch (error) {
+      console.warn('Failed to schedule notification for timer:', timer.id, error);
+    }
+  }
+  
+  console.log(`Scheduled ${notificationIds.length} notifications for ${timers.length} timers`);
+  return notificationIds;
+};
+
+// Cancel all scheduled notifications
+const cancelScheduledNotifications = async (notificationIds: string[]) => {
+  try {
+    await Promise.all(notificationIds.map(id => Notifications.cancelScheduledNotificationAsync(id)));
+  } catch (error) {
+    console.warn('Failed to cancel some notifications:', error);
+  }
 };
 
 interface TimerProviderProps {
@@ -208,6 +281,12 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
       // Don't prevent starting if sound fails
     }
 
+    // Request notification permissions
+    const hasNotificationPermission = await requestNotificationPermissions();
+    if (!hasNotificationPermission) {
+      console.warn('Notification permissions not granted - timers may not work when app is backgrounded');
+    }
+
     // Activate keep awake
     try {
       await activateKeepAwakeAsync();
@@ -215,11 +294,25 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
       console.warn('Failed to activate keep awake:', error);
     }
 
+    const startTime = Date.now();
+    console.log('Starting timer session at:', new Date(startTime).toLocaleTimeString());
+    
+    // Schedule notifications for background completion
+    let scheduledNotifications: string[] = [];
+    if (hasNotificationPermission) {
+      console.log('Scheduling notifications for', appState.timers.length, 'timers');
+      scheduledNotifications = await scheduleTimerNotifications(appState.timers, startTime);
+      console.log('Successfully scheduled', scheduledNotifications.length, 'notifications');
+    } else {
+      console.log('No notification permissions - timers will only work when app is active');
+    }
+
     setAppState(prev => ({
       ...prev,
       isRunning: true,
       currentTimerIndex: 0,
-      timerStartTime: Date.now(),
+      timerStartTime: startTime,
+      scheduledNotifications,
       timers: prev.timers.map((timer, index) => ({
         ...timer,
         status: index === 0 ? 'running' : 'pending',
@@ -232,6 +325,14 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
   }, [appState.timers, playChime]);
 
   const stopMeditation = useCallback(async () => {
+    console.log('Stopping meditation session');
+    
+    // Cancel any scheduled notifications
+    if (appState.scheduledNotifications && appState.scheduledNotifications.length > 0) {
+      console.log('Cancelling', appState.scheduledNotifications.length, 'scheduled notifications');
+      await cancelScheduledNotifications(appState.scheduledNotifications);
+    }
+
     // Deactivate keep awake
     try {
       deactivateKeepAwake();
@@ -253,6 +354,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
       currentTimerIndex: -1,
       timerStartTime: undefined,
       backgroundTimestamp: undefined,
+      scheduledNotifications: undefined,
       timers: prev.timers.map(timer => ({
         ...timer,
         status: 'pending',
@@ -260,7 +362,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
         seconds: timer.originalSeconds
       }))
     }));
-  }, []);
+  }, [appState.scheduledNotifications]);
 
   // Main timer countdown effect
   useEffect(() => {
@@ -288,12 +390,24 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
           const nextTimerIndex = prev.currentTimerIndex + 1;
           const hasNextTimer = nextTimerIndex < prev.timers.length;
 
+          // Cancel the notification for the completed timer since it completed in foreground
+          if (prev.scheduledNotifications && prev.scheduledNotifications[prev.currentTimerIndex]) {
+            Notifications.cancelScheduledNotificationAsync(prev.scheduledNotifications[prev.currentTimerIndex])
+              .catch(error => console.warn('Failed to cancel completed timer notification:', error));
+          }
+
           // Deactivate keep awake if all timers are completed
           if (!hasNextTimer) {
             try {
               deactivateKeepAwake();
             } catch (error) {
               console.warn('Failed to deactivate keep awake on completion:', error);
+            }
+
+            // Cancel any remaining notifications since all timers are complete
+            if (prev.scheduledNotifications && prev.scheduledNotifications.length > 0) {
+              cancelScheduledNotifications(prev.scheduledNotifications)
+                .catch(error => console.warn('Failed to cancel remaining notifications:', error));
             }
           }
 
